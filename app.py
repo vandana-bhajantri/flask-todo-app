@@ -5,24 +5,30 @@ import os
 app = Flask(__name__)
 app.secret_key = "secret123"
 
+# --------------------
 # Database setup
+# --------------------
 DB_FILE = "database.db"
 
 def init_db():
     if not os.path.exists(DB_FILE):
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
-        c.execute("""CREATE TABLE users (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        username TEXT UNIQUE,
-                        password TEXT
-                    )""")
-        c.execute("""CREATE TABLE tasks (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        task TEXT,
-                        user_id INTEGER,
-                        FOREIGN KEY(user_id) REFERENCES users(id)
-                    )""")
+        c.execute("""
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE,
+                password TEXT
+            )
+        """)
+        c.execute("""
+            CREATE TABLE tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task TEXT,
+                user_id INTEGER,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        """)
         conn.commit()
         conn.close()
 
@@ -37,6 +43,11 @@ def get_db():
 # Routes
 # --------------------
 
+# ✅ HOME ROUTE (FIX FOR 404 ERROR)
+@app.route("/")
+def home():
+    return redirect("/login")
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -45,10 +56,15 @@ def register():
 
         db = get_db()
         try:
-            db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+            db.execute(
+                "INSERT INTO users (username, password) VALUES (?, ?)",
+                (username, password)
+            )
             db.commit()
+            db.close()
             return redirect("/login")
         except sqlite3.IntegrityError:
+            db.close()
             return "Username already exists!"
     return render_template("register.html")
 
@@ -59,7 +75,12 @@ def login():
         password = request.form["password"]
 
         db = get_db()
-        user = db.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password)).fetchone()
+        user = db.execute(
+            "SELECT * FROM users WHERE username=? AND password=?",
+            (username, password)
+        ).fetchone()
+        db.close()
+
         if user:
             session["user_id"] = user["id"]
             session["username"] = user["username"]
@@ -78,21 +99,37 @@ def dashboard():
     if request.method == "POST":
         task = request.form["task"]
         if task:
-            db.execute("INSERT INTO tasks (task, user_id) VALUES (?, ?)", (task, session["user_id"]))
+            db.execute(
+                "INSERT INTO tasks (task, user_id) VALUES (?, ?)",
+                (task, session["user_id"])
+            )
             db.commit()
 
-    tasks = db.execute("SELECT * FROM tasks WHERE user_id=?", (session["user_id"],)).fetchall()
+    tasks = db.execute(
+        "SELECT * FROM tasks WHERE user_id=?",
+        (session["user_id"],)
+    ).fetchall()
+
     db.close()
-    return render_template("dashboard.html", tasks=tasks, username=session["username"])
+    return render_template(
+        "dashboard.html",
+        tasks=tasks,
+        username=session["username"]
+    )
 
 @app.route("/delete/<int:id>")
 def delete(id):
     if "user_id" not in session:
         return redirect("/login")
+
     db = get_db()
-    db.execute("DELETE FROM tasks WHERE id=? AND user_id=?", (id, session["user_id"]))
+    db.execute(
+        "DELETE FROM tasks WHERE id=? AND user_id=?",
+        (id, session["user_id"])
+    )
     db.commit()
-    db.close() 
+    db.close()
+
     return redirect("/dashboard")
 
 @app.route("/logout")
@@ -101,5 +138,7 @@ def logout():
     return redirect("/login")
 
 # --------------------
+# Run App
+# --------------------
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run()
