@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        /* ---------- THEME VARIABLES ---------- */
+        :root {
+            --bg-gradient: linear-gradient(to right, #6a11cb, #2575fc);
+            --card-bg: rgba(255,255,255,0.15);
+            --text-color: #ffffff;
+            --task-bg: rgba(255,255,255,0.2);
+            --btn-gradient: linear-gradient(90deg, #ff512f, #dd2476);
+        }
+
+        body.light {
+            --bg-gradient: linear-gradient(to right, #e0eafc, #aacaf7);
+            --card-bg: #ffffff;
+            --text-color: #000000;
+            --task-bg: #e5eff9;
+            --btn-gradient: linear-gradient(90deg, #36d1dc, #5b86e5);
+        }
+
+        /* ---------- BODY ---------- */
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            color: var(--text-color);
+            transition: all 0.4s ease;
+        }
+
+        .container {
+            max-width: 600px;
+            margin-top: 50px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        /* ---------- THEME TOGGLE ---------- */
+        .theme-toggle {
+            text-align: right;
+            margin-bottom: 15px;
+        }
+
+        .theme-toggle button {
+            border: none;
+            background: var(--btn-gradient);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .theme-toggle button:hover {
+            transform: scale(1.05);
+        }
+
+        /* ---------- PROGRESS BAR ---------- */
+        .progress {
+            height: 22px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            background: rgba(255,255,255,0.3);
+        }
+
+        .progress-bar {
+            background: var(--btn-gradient);
+            font-weight: bold;
+            transition: width 0.4s ease;
+        }
+
+        /* ---------- ADD TASK ---------- */
+        #addTaskForm input {
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        #addTaskForm button {
+            border-radius: 12px;
+            background: var(--btn-gradient);
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+
+        #addTaskForm button:hover {
+            transform: scale(1.05);
+        }
+
+        /* ---------- TASK LIST ---------- */
+        .list-group-item {
+            background: var(--task-bg);
+            border: none;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .list-group-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .taskCheckbox {
+            transform: scale(1.3);
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .taskText {
+            font-size: 1.1rem;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .btn-danger {
+            border-radius: 20px;
+            background: linear-gradient(90deg, #f85fca, #bf1572);
+            border: none;
+        }
+
+        .logout {
+        margin-top: 20px;
+        width: 100%;
+        border-radius: 20px;
+        background: #202121 !important;   
+        color: #fff !important;
+        border: none;
+        transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .logout:hover {
+            background: #404040 !important;
+            transform: scale(1.02);
+        }
+
+
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- THEME TOGGLE -->
+    <div class="theme-toggle">
+        <button onclick="toggleTheme()">🌙 / ☀️ Theme</button>
+    </div>
+
+    <h2>☺️ Welcome, {{ username }}👀 👋</h2>
+
+    <!-- PROGRESS -->
+    <div class="progress">
+        <div id="taskProgress" class="progress-bar" style="width:0%">0%</div>
+    </div>
+
+    <!-- ADD TASK -->
+    <form method="POST" class="d-flex mb-3" id="addTaskForm">
+        <input type="text" name="task" class="form-control me-2" placeholder="Add new task...😎" required>
+        <button type="submit" class="btn">Add Task</button>
+    </form>
+
+    <!-- TASKS -->
+    <ul class="list-group">
+        {% for task in tasks %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <input type="checkbox" class="taskCheckbox" data-task-id="{{ task['id'] }}">
+                <span class="taskText">{{ task["task"] }}</span>
+            </div>
+            <a href="/delete/{{ task['id'] }}" class="btn btn-danger btn-sm">Delete</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <a href="/logout" class="btn logout">Logout</a>
+</div>
+
+<script>
+    function updateProgress() {
+        const boxes = document.querySelectorAll('.taskCheckbox');
+        const done = [...boxes].filter(b => b.checked).length;
+        const total = boxes.length;
+        const percent = total ? Math.round(done / total * 100) : 0;
+        const bar = document.getElementById("taskProgress");
+        bar.style.width = percent + "%";
+        bar.textContent = percent + "%";
+    }
+
+    document.querySelectorAll('.taskCheckbox').forEach(box => {
+        box.addEventListener('change', function(){
+            const text = this.nextElementSibling;
+            if(this.checked){
+                text.classList.add("completed");
+                confetti({ particleCount: 60, spread: 80, origin:{y:0.6} });
+            } else {
+                text.classList.remove("completed");
+            }
+            updateProgress();
+        });
+    });
+
+    function toggleTheme(){
+        document.body.classList.toggle("light");
+        localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
+    }
+
+    // Load saved theme
+    if(localStorage.getItem("theme") === "light"){
+        document.body.classList.add("light");
+    }
+
+    updateProgress();
+</script>
+
+</body>
+</html>
