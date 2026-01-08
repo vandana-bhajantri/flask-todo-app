@@ -1,15 +1,57 @@
-body {
-    background-color: #11569b;
-}
+/* ---------- MOBILE RESPONSIVE ---------- */
+@media (max-width: 768px) {
 
-h2 {
-    color: #343a40;
-}
+    body {
+        font-size: 16px;
+        padding: 10px;
+    }
 
-.list-group-item {
-    font-size: 1.1rem;
-}
+    /* Main containers */
+    .container,
+    .login-container,
+    .register-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 20px auto;
+        padding: 15px;
+    }
 
-button {
-    cursor: pointer;
+    /* Headings */
+    h1, h2 {
+        font-size: 1.4rem;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    /* Inputs & buttons */
+    input,
+    button,
+    .btn {
+        font-size: 16px;
+        padding: 12px;
+        width: 100%;
+    }
+
+    /* Task list items */
+    .list-group-item,
+    ul li {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    /* Checkbox spacing */
+    .taskCheckbox {
+        transform: scale(1.2);
+        margin-right: 10px;
+    }
+
+    /* Progress bar */
+    .progress {
+        height: 18px;
+    }
+
+    /* Logout button spacing */
+    .logout {
+        margin-top: 15px;
+    }
 }
